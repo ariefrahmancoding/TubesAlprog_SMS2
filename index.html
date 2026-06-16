@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HydroGuard | Smart Flood Monitoring</title>
+    <meta name="description" content="HydroGuard adalah platform pemantauan dan mitigasi banjir berbasis AI">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- External Libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+</head>
+<body style="background: url('images/bg.png') no-repeat center center fixed; background-size: cover; background-color: #0A192F;">
+    <div id="app"></div>
+
+    <!-- LANDING PAGE -->
+    <div id="landing-view" class="view-container">
+        <!-- INTERACTIVE COLLAGE BACKGROUND -->
+        <div class="interactive-collage">
+            <div class="collage-item img-1" style="background-image: url('images/flood_bg_1781163848494.png');"></div>
+            <div class="collage-item img-2" style="background-image: url('images/flood_scene.png');"></div>
+            <div class="collage-item img-3" style="background-image: url('images/sar_team.png');"></div>
+            <div class="collage-item img-4" style="background-image: url('images/bg.png');"></div>
+            <div class="collage-overlay"></div>
+        </div>
+        
+        <div class="hero-content">
+            <div class="hero-logo">🌊</div>
+        <h1 class="hero-title">HydroGuard</h1>
+        <h2 class="hero-subtitle">Portal Sistem Peringatan Dini & Mitigasi Banjir</h2>
+        <p class="hero-desc">
+            Pilih portal akses Anda untuk masuk ke dalam sistem Command Center terpadu.
+        </p>
+        
+        <div class="role-cards-container">
+            <div class="role-card card-warga" onclick="HydroApp.prepareLogin('warga')">
+                <div class="role-icon">🧑‍🤝‍🧑</div>
+                <h3>Portal Warga</h3>
+                <p>Akses informasi rute evakuasi, peringatan dini, dan kondisi cuaca di sekitar Anda.</p>
+            </div>
+            <div class="role-card card-petugas" onclick="HydroApp.prepareLogin('petugas')">
+                <div class="role-icon">🦺</div>
+                <h3>Portal Petugas</h3>
+                <p>Akses kontrol sirine manual, pengarahan tim SAR, dan pemantauan sensor lapangan.</p>
+            </div>
+            <div class="role-card card-admin" onclick="HydroApp.prepareLogin('admin')">
+                <div class="role-icon">💻</div>
+                <h3>Portal Admin IT</h3>
+                <p>Akses log diagnostik sistem, kalibrasi sensor, dan pemeliharaan Artificial Intelligence.</p>
+            </div>
+        </div>
+        
+        <p style="margin-top: 2rem; color: #888; font-size: 0.9rem; position: relative; z-index: 10;">
+            Belum memiliki ID terdaftar? <a href="#" style="color: var(--aqua-cyan);" onclick="HydroApp.navigate('register')">Daftar Akun Baru</a>
+        </p>
+        </div> <!-- End Hero Content -->
+    </div>
+
+    <!-- REGISTER PAGE -->
+    <div id="register-view" class="view-container hidden">
+        <div class="glass-panel login-box">
+            <h2 style="color: var(--aqua-cyan); margin-bottom: 2rem;">Registrasi Pengguna Baru</h2>
+            <div class="input-group">
+                <label>Username</label>
+                <input type="text" id="reg-username" placeholder="Masukkan Username...">
+            </div>
+            <div class="input-group">
+                <label>Password Akun</label>
+                <input type="password" id="reg-password" placeholder="Buat kata sandi aman...">
+            </div>
+            <div class="input-group">
+                <label>Daftar Sebagai</label>
+                <select id="reg-role">
+                    <option value="warga">Warga Sipil</option>
+                    <option value="petugas">Petugas BPBD</option>
+                    <option value="admin">Administrator IT</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Perekaman Biometrik Wajah</label>
+                <div style="width:100%; height: 200px; background: rgba(0,0,0,0.8); border-radius: 8px; overflow:hidden; position: relative; border: 1px solid rgba(77, 208, 225, 0.5);">
+                    <video id="reg-webcam-feed" autoplay muted playsinline style="position:absolute; width: 100%; height: 100%; object-fit: cover;"></video>
+                    
+                    <div id="reg-webcam-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: none;">
+                        <div id="reg-face-lock-box" class="face-lock-idle">
+                            <div class="corner top-left"></div>
+                            <div class="corner top-right"></div>
+                            <div class="corner bottom-left"></div>
+                            <div class="corner bottom-right"></div>
+                        </div>
+                        <div id="reg-scan-text" style="position: absolute; bottom: 20px; color: #FFF; font-weight: bold; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 15px; font-size: 0.85rem; display: none;">
+                            MEREKAM POLA WAJAH...
+                        </div>
+                    </div>
+                </div>
+                <p id="reg-webcam-status" style="font-size: 0.8rem; color: var(--warning-yellow); margin-top: 5px;">Kamera siap digunakan.</p>
+            </div>
+            <button id="btn-reg" class="btn-primary" style="width: 100%; margin-top: 1rem;" onclick="HydroApp.registerUser()">Rekam Wajah & Buat Akun</button>
+            <button class="btn-primary" style="width: 100%; margin-top: 0.5rem; background: transparent; border: 1px solid var(--aqua-cyan); color: var(--aqua-cyan);" onclick="HydroApp.navigate('landing')">Batal</button>
+        </div>
+    </div>
+
+    <!-- LOGIN PAGE -->
+    <div id="login-view" class="view-container hidden">
+        <div class="glass-panel login-box" style="max-width: 500px;">
+            <h2 style="color: var(--aqua-cyan); margin-bottom: 1rem;">Otentikasi Sistem</h2>
+            <p id="login-subtitle" style="color: #B0C4DE; margin-bottom: 2rem;">Masuk sebagai: <strong id="lbl-login-role">...</strong></p>
+            
+            <div class="input-group">
+                <label>Username</label>
+                <input type="text" id="login-username" placeholder="Masukkan Username...">
+            </div>
+
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="login-password" placeholder="Masukkan kata sandi...">
+            </div>
+            
+            <div class="input-group" id="face-verification-group">
+                <label>Pemindaian Biometrik Wajah</label>
+                <div style="width:100%; height: 260px; background: rgba(0,0,0,0.8); border-radius: 8px; overflow:hidden; position: relative; border: 1px solid rgba(77, 208, 225, 0.5);">
+                    <video id="webcam-feed" autoplay muted playsinline style="position:absolute; width: 100%; height: 100%; object-fit: cover;"></video>
+                    <canvas id="login-canvas" style="position:absolute; width: 100%; height: 100%; object-fit: cover; display: none; z-index: 2; background: black;"></canvas>
+                    
+                    <!-- Scanner Lock Overlay -->
+                    <div id="webcam-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: none;">
+                        <div id="face-lock-box" class="face-lock-idle">
+                            <div class="corner top-left"></div>
+                            <div class="corner top-right"></div>
+                            <div class="corner bottom-left"></div>
+                            <div class="corner bottom-right"></div>
+                        </div>
+                        <div id="scan-text" style="position: absolute; bottom: 20px; color: #FFF; font-weight: bold; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 15px; font-size: 0.85rem; display: none;">
+                            MENGUNCI WAJAH...
+                        </div>
+                    </div>
+                </div>
+                <p id="webcam-status" style="font-size: 0.8rem; color: var(--warning-yellow); margin-top: 5px;">Kamera siap digunakan.</p>
+            </div>
+            <button id="btn-auth" class="btn-primary" style="width: 100%; margin-top: 1rem;" onclick="HydroApp.authenticate()">Mulai Pemindaian & Masuk</button>
+            <button class="btn-primary" style="width: 100%; margin-top: 0.5rem; background: transparent; border: 1px solid var(--aqua-cyan); color: var(--aqua-cyan);" onclick="HydroApp.navigate('landing')">Ganti Portal</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard-view" class="view-container hidden">
+        <div class="dash-header">
+            <div>
+                <h1 style="color: var(--aqua-cyan);">Command Center</h1>
+                <p style="color: #B0C4DE; font-size: 0.9rem;">
+                    Selamat datang, <strong id="lbl-active-name" style="color: white;">User</strong> | 
+                    Peran: <strong id="lbl-active-role" style="color: white; text-transform: uppercase;">WARGA SIPIL</strong> | 
+                    Status: <span style="color: var(--safe-green);">ONLINE</span>
+                </p>
+            </div>
+            <button class="btn-primary" style="background: transparent; border: 1px solid var(--danger-red); color: var(--danger-red);" onclick="HydroApp.logout()">Logout</button>
+        </div>
+
+        <!-- EXCLUSIVE ROLE PANELS -->
+        <div id="role-panel-warga" class="role-panel hidden">
+            <h3 style="color: var(--aqua-cyan); margin-bottom: 10px;">🤖 Asisten AI Mitigasi (BMKG)</h3>
+            <p style="font-size: 0.9rem; margin-bottom: 15px; color: #B0C4DE;">Silakan tanyakan informasi seputar rute evakuasi, cuaca, atau langkah keselamatan banjir di sini.</p>
+            
+            <div id="chatbot-container" style="background: rgba(0, 0, 0, 0.2); border-radius: 8px; border: 1px solid rgba(77, 208, 225, 0.2); display: flex; flex-direction: column; height: 300px;">
+                <div id="chat-messages" style="flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                    <div class="chat-msg ai-msg">Halo! Saya asisten AI mitigasi bencana. Ada yang bisa saya bantu terkait kewaspadaan banjir hari ini?</div>
+                </div>
+                <div style="display: flex; border-top: 1px solid rgba(77, 208, 225, 0.2); padding: 10px; gap: 10px;">
+                    <input type="text" id="chat-input" placeholder="Ketik pertanyaan Anda..." style="flex: 1; padding: 8px; border-radius: 4px; border: none; background: rgba(255,255,255,0.1); color: white;" onkeypress="if(event.key === 'Enter') window.HydroApp.sendChatMessage()">
+                    <button class="btn-action bg-safe" onclick="window.HydroApp.sendChatMessage()" style="padding: 8px 15px; width: auto; font-size: 0.9rem;">Kirim</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="role-panel-petugas" class="role-panel hidden">
+            <h3>🚨 Command Override (Mode Petugas BPBD)</h3>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn-action bg-danger" onclick="alert('MANUAL OVERRIDE: Sirene Evakuasi Dinyalakan di Radius 5 KM!')">BUNYIKAN SIRENE MANUAL</button>
+                <button class="btn-action bg-warning" onclick="alert('Tim SAR Rescue dikerahkan ke titik kordinat terendam.')">KIRIM TIM SAR</button>
+            </div>
+        </div>
+
+        <div id="role-panel-admin" class="role-panel hidden">
+            <h3>⚙️ Diagnostic Center (Mode Administrator)</h3>
+            <div class="diagnostic-log" id="admin-log">
+                [SYS] Neural Network Loaded. Weights initialized.<br>
+                [SYS] IoT Sensor nodes returning status 200 OK.<br>
+                [SYS] Waiting for telemetry stream...
+            </div>
+        </div>
+
+        <div class="dash-grid">
+            <div class="glass-panel sensor-card card-water">
+                <div class="icon">🌊</div>
+                <h3>Ketinggian Air</h3>
+                <div class="value" id="val-water-level">0.00 m</div>
+            </div>
+            <div class="glass-panel sensor-card card-rain">
+                <div class="icon">🌧️</div>
+                <h3>Intensitas Hujan</h3>
+                <div class="value" id="val-rainfall">0.0 mm/j</div>
+            </div>
+            <div class="glass-panel sensor-card card-weather">
+                <div class="icon" id="icon-weather">⛅</div>
+                <h3>Prediksi Cuaca</h3>
+                <div class="value" id="val-weather" style="font-size: 1.5rem; margin-top: 1rem; color: #FFF;">Cerah Berawan</div>
+            </div>
+            <div class="glass-panel sensor-card card-ai">
+                <div class="icon">🚨</div>
+                <h3>Status Sistem (Fuzzy)</h3>
+                <div class="value" style="font-size: 1.5rem; margin-top: 1rem;">
+                    <span id="badge-fuzzy" class="status-badge bg-safe">NORMAL</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ai-center">
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <!-- Historical Graph -->
+                <div class="glass-panel" style="padding: 1.5rem;">
+                    <h3 style="color: var(--aqua-cyan); margin-bottom: 10px;">📊 Grafik Historis Pemantauan</h3>
+                    <div style="width: 100%; height: 250px;">
+                        <canvas id="historicalChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- AI Output -->
+                <div class="glass-panel explanation-panel">
+                    <h3 style="color: var(--warning-yellow); margin-bottom: 1rem; display:flex; align-items:center; gap: 10px;">
+                        🤖 HydroAI Smart Explanation Engine
+                    </h3>
+                    <p id="txt-ai-explanation" style="line-height: 1.6; font-size: 0.95rem; color: #E0E0E0;"></p>
+                    <div style="margin-top: 15px;">
+                        <p style="font-size: 0.85rem; color: #B0C4DE; margin-bottom: 5px;">Prediksi Risiko Banjir (ANN): <span id="nn-percentage">0.00</span>%</p>
+                        <div style="width: 100%; height: 6px; background: rgba(0,0,0,0.5); border-radius: 3px;">
+                            <div id="nn-progress" style="height: 100%; width: 0%; background: var(--aqua-cyan); transition: width 0.5s ease;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GIS Map -->
+            <div class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column;">
+                <h3 style="color: var(--aqua-cyan); margin-bottom: 5px;">🗺️ GIS Intelligence Map</h3>
+                <p style="font-size: 0.85rem; color: #B0C4DE; margin-bottom: 15px;">Pemantauan Real-Time Peta Risiko Banjir (Titik Merah: Posko Evakuasi)</p>
+                <div id="gis-map" class="gis-map" style="flex: 1; min-height: 400px; background: #0A192F;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="ai-engine.js"></script>
+    <script src="_framework/blazor.webview.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
