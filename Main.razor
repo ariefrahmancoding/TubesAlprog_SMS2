@@ -1,0 +1,47 @@
+@using Microsoft.JSInterop
+@using HydroGuard.Services
+@inject IJSRuntime JSRuntime
+
+@code {
+    private static DatabaseService _dbService = new DatabaseService();
+    private static AIEngine _aiEngine = new AIEngine();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Register this component so JS can call static methods? 
+            // Wait, standard JSInvokable without object reference is easiest using static methods.
+        }
+    }
+
+    [JSInvokable]
+    public static Task<bool> RegisterUserAsync(string username, string password, string role)
+    {
+        bool success = _dbService.RegisterUser(username, password, role);
+        return Task.FromResult(success);
+    }
+
+    [JSInvokable]
+    public static Task<string> LoginUserAsync(string username, string password)
+    {
+        string role = _dbService.ValidateUser(username, password);
+        return Task.FromResult(role); // Returns empty string if failed
+    }
+
+    [JSInvokable]
+    public static async Task<AIResult> RunAIAnalysisAsync(float waterLevel, float rainfall, float soilMoisture)
+    {
+        var result = await _aiEngine.ProcessSensorDataAsync(waterLevel, rainfall, soilMoisture);
+        return result;
+    }
+
+    private static NLPEngine _chatbotEngine = new NLPEngine();
+
+    [JSInvokable]
+    public static async Task<string> AskChatbotAsync(string message)
+    {
+        var reply = await _chatbotEngine.AskChatbotAsync(message);
+        return reply;
+    }
+}
